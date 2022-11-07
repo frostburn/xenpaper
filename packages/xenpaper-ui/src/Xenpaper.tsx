@@ -36,6 +36,293 @@ import { SoundEngineTonejs } from "@xenpaper/sound-engine-tonejs";
 
 import { Helmet } from "react-helmet";
 
+// This should be enough
+// import { WebMidi } from "webmidi";
+// import { MidiOut, Note } from "xen-midi";
+
+/* Copy & paste because I don't know what yarn/lerna is complaining about */
+import {Output, WebMidi} from 'webmidi';
+
+// I think this is right. The original is from xen-dev-utils.
+function ftom(f: number) {
+    const m = Math.log(f/440)/Math.log(2)*12 + 69;
+    return [Math.round(m), (m - Math.round(m)) * 100];
+}
+
+/**
+ * Pitch bend range measured in semitones (+-).
+ */
+export const BEND_RANGE_IN_SEMITONES = 2;
+
+// Large but finite number to signify voices that are off
+const EXPIRED = 10000;
+
+// Cents offset tolerance for channel reuse.
+const EPSILON = 1e-6;
+
+/**
+ * Abstraction for a pitch-bent midi channel.
+ * Polyphonic in pure octaves and 12edo in general.
+ */
+type Voice = {
+  age: number;
+  channel: number;
+  centsOffset: number;
+};
+
+/**
+ * Free-pitch MIDI note to be played at a later time.
+ */
+export type Note = {
+  /** Frequency in Hertz (Hz) */
+  frequency: number;
+  /** Attack velocity from 0 to 127. */
+  rawAttack?: number;
+  /** Release velocity from 0 to 127. */
+  rawRelease?: number;
+  /** Note-on time in milliseconds (ms) as measured by `WebMidi.time`.
+   * If time is a string prefixed with "+" and followed by a number, the message will be delayed by that many milliseconds.
+   */
+  time: DOMHighResTimeStamp | string;
+  /** Note duration in milliseconds (ms). */
+  duration: DOMHighResTimeStamp;
+};
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function emptyNoteOff(rawRelease?: number, time?: DOMHighResTimeStamp) {}
+
+/**
+ * Returned by MIDI note on. Turns the note off when called.
+ */
+export type NoteOff = typeof emptyNoteOff;
+
+/**
+ * Wrapper for a webmidi.js output.
+ * Uses multiple channels to achieve polyphonic microtuning.
+ */
+
+export class MidiOut {
+  output: Output | null;
+  channels: Set<number>;
+  log: (msg: string) => void;
+  private voices: Voice[];
+  private lastEventTime: DOMHighResTimeStamp;
+
+  /**
+   * Constuct a new wrapper for a webmidi.js output.
+   * @param output Output device or `null` if you need a dummy out.
+   * @param channels Channels to use for sending pitch bent MIDI notes. Number of channels determines maximum microtonal polyphony.
+   * @param log Logging function.
+   */
+  constructor(
+    output: Output | null,
+    channels: Set<number>,
+    log?: (msg: string) => void
+  ) {
+    this.output = output;
+    this.channels = channels;
+    if (log === undefined) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      this.log = msg => {};
+    } else {
+      this.log = log;
+    }
+
+    this.voices = [];
+    this.channels.forEach(channel => {
+      this.voices.push({
+        age: EXPIRED,
+        centsOffset: NaN,
+        channel,
+      });
+    });
+    this.lastEventTime = WebMidi.time;
+
+    this.sendPitchBendRange();
+  }
+
+  private sendPitchBendRange() {
+    if (this.output !== null) {
+      this.channels.forEach(channel => {
+        this.output!.channels[channel].sendPitchBendRange(
+          BEND_RANGE_IN_SEMITONES,
+          0
+        );
+      });
+    }
+  }
+
+  /**
+   * Select a voice that's using a cents offset combatible channel or the oldest voice if nothing can be re-used.
+   * @param centsOffset Cents offset (pitch-bend) from 12edo.
+   * @returns A voice for the next note-on event.
+   */
+  private selectVoice(centsOffset: number) {
+    // Age signifies how many note ons have occured after voice intialization
+    this.voices.forEach(voice => voice.age++);
+
+    // Re-use a channel that already has the correct pitch bend
+    for (let i = 0; i < this.voices.length; ++i) {
+      if (Math.abs(this.voices[i].centsOffset - centsOffset) < EPSILON) {
+        this.log(`Re-using channel ${this.voices[i].channel}`);
+        this.voices[i].age = 0;
+        return this.voices[i];
+      }
+    }
+
+    // Nothing re-usable found. Use the oldest voice.
+    let oldestVoice = this.voices[0];
+    this.voices.forEach(voice => {
+      if (voice.age > oldestVoice.age) {
+        oldestVoice = voice;
+      }
+    });
+    oldestVoice.age = 0;
+    oldestVoice.centsOffset = centsOffset;
+    return oldestVoice;
+  }
+
+  /**
+   * Send a note-on event and pitch-bend to the output device in one of the available channels.
+   * @param frequency Frequency of the note in Hertz (Hz).
+   * @param rawAttack Attack velocity of the note from 0 to 127.
+   * @returns A callback for sending a corresponding note off in the correct channel.
+   */
+  sendNoteOn(
+    frequency: number,
+    rawAttack?: number,
+    time?: DOMHighResTimeStamp
+  ): NoteOff {
+    if (time === undefined) {
+      time = WebMidi.time;
+    }
+    if (time < this.lastEventTime) {
+      throw new Error(
+        `Events must be triggered in causal order: ${time} < ${this.lastEventTime} (note on)`
+      );
+    }
+    this.lastEventTime = time;
+
+    if (this.output === null) {
+      return emptyNoteOff;
+    }
+    if (!this.channels.size) {
+      return emptyNoteOff;
+    }
+    const [noteNumber, centsOffset] = ftom(frequency);
+    if (noteNumber < 0 || noteNumber >= 128) {
+      return emptyNoteOff;
+    }
+    const voice = this.selectVoice(centsOffset);
+    this.log(
+      `Sending note on ${noteNumber} at velocity ${
+        (rawAttack || 64) / 127
+      } on channel ${
+        voice.channel
+      } with bend ${centsOffset} resulting from frequency ${frequency}`
+    );
+    const bendRange = BEND_RANGE_IN_SEMITONES * 100;
+    this.output.channels[voice.channel].sendPitchBend(centsOffset / bendRange);
+    this.output.channels[voice.channel].sendNoteOn(noteNumber, {
+      rawAttack,
+      time,
+    });
+
+    const noteOff = (rawRelease?: number, time?: DOMHighResTimeStamp) => {
+      if (time === undefined) {
+        time = WebMidi.time;
+      }
+      if (time < this.lastEventTime) {
+        throw new Error(
+          `Events must be triggered in causal order: ${time} < ${this.lastEventTime} (note off)`
+        );
+      }
+      this.lastEventTime = time;
+
+      this.log(
+        `Sending note off ${noteNumber} at velocity ${
+          (rawRelease || 64) / 127
+        } on channel ${voice.channel}`
+      );
+      voice.age = EXPIRED;
+      this.output!.channels[voice.channel].sendNoteOff(noteNumber, {
+        rawRelease,
+        time,
+      });
+    };
+    return noteOff;
+  }
+
+  /**
+   * Schedule a series of notes to be played at a later time.
+   * Please note that this reserves the channels until all notes have finished playing.
+   * @param notes Notes to be played.
+   */
+  playNotes(notes: Note[]) {
+    // Break notes into events.
+    const now = WebMidi.time;
+    const events = [];
+    for (const note of notes) {
+      let time: number;
+      if (typeof note.time === 'string') {
+        if (note.time.startsWith('+')) {
+          time = now + parseFloat(note.time.slice(1));
+        } else {
+          time = parseFloat(note.time);
+        }
+      } else {
+        time = note.time;
+      }
+      const off = {
+        type: 'off' as const,
+        rawRelease: note.rawRelease,
+        time: time + note.duration,
+        callback: emptyNoteOff,
+      };
+      events.push({
+        type: 'on' as const,
+        frequency: note.frequency,
+        rawAttack: note.rawAttack,
+        time,
+        off,
+      });
+      events.push(off);
+    }
+
+    // Sort events in causal order.
+    events.sort((a, b) => a.time - b.time);
+
+    // Trigger events in causal order.
+    for (const event of events) {
+      if (event.type === 'on') {
+        event.off.callback = this.sendNoteOn(
+          event.frequency,
+          event.rawAttack,
+          event.time
+        );
+      } else if (event.type === 'off') {
+        event.callback(event.rawRelease, event.time);
+      }
+    }
+  }
+
+  /**
+   * Clear scheduled notes that have not yet been played.
+   * Will start working once the Chrome bug is fixed: https://bugs.chromium.org/p/chromium/issues/detail?id=471798
+   */
+  clear() {
+    if (this.output !== null) {
+      this.output.clear();
+      this.output.sendAllNotesOff();
+    }
+    this.lastEventTime = WebMidi.time;
+  }
+}
+
+/** End of copy & paste */
+
+
+
 //
 // sound engine instance
 //
@@ -63,6 +350,19 @@ const parse = (unparsed: string): Parsed => {
         if (score) {
             const scoreMs = scoreToMs(score);
             soundEngine.setScore(scoreMs);
+
+            const midiScore: Note[] = [];
+            for (const event of scoreMs.sequence) {
+                if (event.type === "NOTE_MS") {
+                    midiScore.push({
+                        frequency: event.hz,
+                        time: `+${event.ms}`,
+                        duration: event.msEnd - event.ms
+                    });
+                }
+            }
+            // State schmate
+            (window as any).midiScore = midiScore;
         }
 
         return {
@@ -266,6 +566,27 @@ export function XenpaperApp(props: Props): React.ReactElement {
         );
     });
 
+    // Herp derp, I'm in your MIDI and have no idea how to use React.
+    useEffect(() => {
+        async function init() {
+            await WebMidi.enable();
+
+            let query = "Please select output device:";
+
+            for (let i = 0; i < WebMidi.outputs.length; ++i) {
+                query += `\n${i}: ${WebMidi.outputs[i].name}`;
+            }
+
+            const selection = parseInt(window.prompt(query) || "0");
+
+            // Only one of these outputs should be selectable by the user and the channels should be configurable too.
+            const channels = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16]);
+            // State management, what state management?
+            (window as any).midiOut = new MidiOut(WebMidi.outputs[selection], channels);
+        }
+        init();
+    });
+
     useEffect(() => {
         return soundEngine.onEnd(() => {
             playing.set(false);
@@ -330,8 +651,11 @@ export function XenpaperApp(props: Props): React.ReactElement {
             rulerState.set((draft) => {
                 draft.notes.clear();
             });
+            ((window as any).midiOut as MidiOut).playNotes((window as any).midiScore as Note[]);
         } else {
             soundEngine.pause();
+            // Unfortunately the MIDI API in the browser doesn't actually let you cancel scheduled notes.
+            (window as any).midiOut.clear();
         }
     }, []);
 

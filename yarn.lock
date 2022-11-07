@@ -1090,6 +1090,13 @@
   dependencies:
     regenerator-runtime "^0.13.4"
 
+"@babel/runtime@^7.17.9":
+  version "7.20.1"
+  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.20.1.tgz#1148bb33ab252b165a06698fde7576092a78b4a9"
+  integrity sha512-mrzLkl6U9YLF8qpqI7TB82PESyEGjm/0Ly91jG575eVxMMlb8fYfOXFZIJ8XfLrJZQbm7dlKry2bJmXBUEkdFg==
+  dependencies:
+    regenerator-runtime "^0.13.10"
+
 "@babel/template@7.0.0-beta.44":
   version "7.0.0-beta.44"
   resolved "https://registry.yarnpkg.com/@babel/template/-/template-7.0.0-beta.44.tgz#f8832f4fdcee5d59bf515e595fc5106c529b394f"
@@ -2777,6 +2784,11 @@
   resolved "https://registry.yarnpkg.com/@types/uglify-js/-/uglify-js-3.13.0.tgz#1cad8df1fb0b143c5aba08de5712ea9d1ff71124"
   dependencies:
     source-map "^0.6.1"
+
+"@types/webmidi@^2.0.6":
+  version "2.0.6"
+  resolved "https://registry.yarnpkg.com/@types/webmidi/-/webmidi-2.0.6.tgz#c9b1428bbc5d5f49cc6201eae0dc5e2b3fd23e0e"
+  integrity sha512-sfS0A5IryqmBrUpcGPipEPeFdpqmZzP6b6lZFxHKgz5n2Vhzh4yJ5P2TvoDUhDjqJyv0Y25ng0Qodgo2Vu08ug==
 
 "@types/webpack-sources@*":
   version "2.1.0"
@@ -5173,6 +5185,13 @@ dir-glob@^3.0.1:
   dependencies:
     path-type "^4.0.0"
 
+djipevents@^2.0.5:
+  version "2.0.6"
+  resolved "https://registry.yarnpkg.com/djipevents/-/djipevents-2.0.6.tgz#9da598d1f59659d3f13d94dcdbd76f92545a23de"
+  integrity sha512-2vS7/OVdqocBAIVPbxhk36swE4HnjUL1muoibrkoaCaEAEAF/ww8QbYm55PqlzMp51pvD01wHr/CkZmKZdrI/g==
+  dependencies:
+    "@babel/runtime" "^7.17.9"
+
 dns-equal@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/dns-equal/-/dns-equal-1.0.0.tgz#b39e7f1da6eb0a75ba9c17324b34753c47e0654d"
@@ -6237,6 +6256,11 @@ form-data@~2.3.2:
 forwarded@~0.1.2:
   version "0.1.2"
   resolved "https://registry.yarnpkg.com/forwarded/-/forwarded-0.1.2.tgz#98c23dab1175657b8c0573e8ceccd91b0ff18c84"
+
+fraction.js@^4.2.0:
+  version "4.2.0"
+  resolved "https://registry.yarnpkg.com/fraction.js/-/fraction.js-4.2.0.tgz#448e5109a313a3527f5a3ab2119ec4cf0e0e2950"
+  integrity sha512-MhLuK+2gUcnZe8ZHlaaINnQLl0xRIGRfcGk2yl8xoQAfHrSsL3rYu6FCmBdkdbhc9EPlwyGHewaRsvwRMJtAlA==
 
 fragment-cache@^0.2.1:
   version "0.2.1"
@@ -7451,6 +7475,11 @@ istanbul-reports@^3.0.2:
     html-escaper "^2.0.0"
     istanbul-lib-report "^3.0.0"
 
+jazz-midi@^1.7.6:
+  version "1.7.6"
+  resolved "https://registry.yarnpkg.com/jazz-midi/-/jazz-midi-1.7.6.tgz#6bd3a9cb6dce0109271252c8c682ac04184c4018"
+  integrity sha512-vKCmBpotb1y+kEbRlu43COar2LzV46uOTTzyM/zTx5LR7WUTWle7FFC8rphqBVdryW66QtOyUA2N/DWZToBang==
+
 jest-changed-files@^26.6.2:
   version "26.6.2"
   resolved "https://registry.yarnpkg.com/jest-changed-files/-/jest-changed-files-26.6.2.tgz#f6198479e1cc66f22f9ae1e22acaa0b429c042d0"
@@ -7989,6 +8018,14 @@ jsprim@^1.2.2:
   dependencies:
     array-includes "^3.1.2"
     object.assign "^4.1.2"
+
+jzz@^1.4.5:
+  version "1.5.3"
+  resolved "https://registry.yarnpkg.com/jzz/-/jzz-1.5.3.tgz#6af163289a864f4bcfaf5cbd3d4cd36cc42cc5b3"
+  integrity sha512-gEih5CUMkK8n+2Mm5QHi+T64TLb68UxyQgYAOATSIA9Js3ZjMOmnGet48thbT1wLbh9J+NK+3wPcEiGo0OGvng==
+  dependencies:
+    "@types/webmidi" "^2.0.6"
+    jazz-midi "^1.7.6"
 
 killable@^1.0.1:
   version "1.0.1"
@@ -10763,6 +10800,11 @@ regenerator-runtime@^0.11.0:
   version "0.11.1"
   resolved "https://registry.yarnpkg.com/regenerator-runtime/-/regenerator-runtime-0.11.1.tgz#be05ad7f9bf7d22e056f9726cee5017fbf19e2e9"
 
+regenerator-runtime@^0.13.10:
+  version "0.13.10"
+  resolved "https://registry.yarnpkg.com/regenerator-runtime/-/regenerator-runtime-0.13.10.tgz#ed07b19616bcbec5da6274ebc75ae95634bfc2ee"
+  integrity sha512-KepLsg4dU12hryUO7bp/axHAKvwGOCV0sGloQtpagJ12ai+ojVDqkeGSiRX1zlq+kjIMZ1t7gpze+26QqtdGqw==
+
 regenerator-runtime@^0.13.4, regenerator-runtime@^0.13.7:
   version "0.13.7"
   resolved "https://registry.yarnpkg.com/regenerator-runtime/-/regenerator-runtime-0.13.7.tgz#cac2dacc8a1ea675feaabaeb8ae833898ae46f55"
@@ -12694,6 +12736,15 @@ webidl-conversions@^6.1.0:
   version "6.1.0"
   resolved "https://registry.yarnpkg.com/webidl-conversions/-/webidl-conversions-6.1.0.tgz#9111b4d7ea80acd40f5270d666621afa78b69514"
 
+webmidi@^3.0.21:
+  version "3.0.21"
+  resolved "https://registry.yarnpkg.com/webmidi/-/webmidi-3.0.21.tgz#a1faf28618779146c941eb559a4e1822408cb6a5"
+  integrity sha512-SStCLo099908jR0duYUTstVHNlKh9A/WvXIF5ED2ShGnE2MAy28UhrdzgjLsyDzOiBn8Od3ngT8g/MVa2TC5hg==
+  dependencies:
+    djipevents "^2.0.5"
+  optionalDependencies:
+    jzz "^1.4.5"
+
 webpack-dev-middleware@^3.7.2:
   version "3.7.3"
   resolved "https://registry.yarnpkg.com/webpack-dev-middleware/-/webpack-dev-middleware-3.7.3.tgz#0639372b143262e2b84ab95d3b91a7597061c2c5"
@@ -13123,6 +13174,21 @@ ws@^6.2.1:
 ws@^7.4.4:
   version "7.4.5"
   resolved "https://registry.yarnpkg.com/ws/-/ws-7.4.5.tgz#a484dd851e9beb6fdb420027e3885e8ce48986c1"
+
+xen-dev-utils@^0.1.2:
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/xen-dev-utils/-/xen-dev-utils-0.1.2.tgz#0ef9d23493582eff2b4ab55da983f5c0d1b33b41"
+  integrity sha512-5Gya1P0k89veWkRevhUT4bzJDyotEFIb/cYC1bP0KPAxdHB+oTlhdDd540DXSud5kulio78DJpLucUo4BWRA7Q==
+  dependencies:
+    fraction.js "^4.2.0"
+
+xen-midi@^0.0.3:
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/xen-midi/-/xen-midi-0.0.3.tgz#41c21c72a1f0703c9e97cd19bedc0b58b3a8765f"
+  integrity sha512-XTi/OaCpIb/C+9XoVqyOsWihUSjeSAbbWn1ytB4ZdOYGikZwomEDK/ZOe9g6sNHNEuG4xwRq+dVV9mRs2txEZg==
+  dependencies:
+    webmidi "^3.0.21"
+    xen-dev-utils "^0.1.2"
 
 xml-name-validator@^3.0.0:
   version "3.0.0"
